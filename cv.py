@@ -9,7 +9,7 @@ import numpy as np
 from utils import gaussian_density
 from functools import partial
 
-def fix(df, col, confidence=0.05):
+def normalize(df, col, confidence=0.05):
     if confidence is None:
         return df[col].values
     df['ls'] = df.groupby('location')[col].transform('sum')
@@ -241,16 +241,8 @@ def prepare_data(tag='val'):
     df['rmax'] = df.groupby('location')['precipitation'].transform('max')
     rcols = []
     
-    base = pd.read_csv('subs/cv_lb_0.002523834.csv').rename(columns={'label': 'base'})
-    df = df.merge(base, on='event_id',how='left')
-    df['base'] = fix(df,'base')
-    df,rcols = fe(df, 'precipitation')
-    #df,rcols1 = fe(df, 'days_since_rain')
-    #df,rcols1 = fe(df, 'precipitation_50')
-    
-
-    feas += rcols# + rcols1
-    return df, feas#+['base']
+    feas += rcols
+    return df, feas
 
 def cv(tag):
     df, feas = prepare_data()
@@ -295,9 +287,9 @@ def cv(tag):
         importance = xgb.get_feature_importance()
         print(importance.head())
         val['flood'] = xgb.predict(val[feas], val_margin)
-        df.loc[mask,'flood'] = fix(val[['location','flood','flood_a1']], 'flood', conf)
+        df.loc[mask,'flood'] = normalize(val[['location','flood','flood_a1']], 'flood', conf)
         test['pred'] = xgb.predict(test[feas], test_margin)
-        test['flood'] += fix(test[['location','pred','flood_a1']], 'pred', conf)
+        test['flood'] += normalize(test[['location','pred','flood_a1']], 'pred', conf)
         score = log_loss(df.loc[mask,'label'], df.loc[mask,'flood'])
         scores.append(score)
         print('fold', i, score)
