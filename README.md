@@ -18,11 +18,15 @@ This project aims to predict flood occurrences in South Africa.  The approach in
     *   `df[f'rainfall_lag_{lag}_{col}' = ... .diff(lag).fillna(0)`:  Calculates the difference in precipitation between the current day and `lag` days prior.  `fillna(0)` handles the initial `NaN` values.
     *   Nested loops create `lag_rm_{w}_{lag}_precipitation` features.  These are rolling means (windows `w`) of the lagged differences (`lag`).  This captures the trend of precipitation *changes* over different time scales.  This is done for lags of 2, 8, 14, and 28 days, and a variety of window sizes.
 
-6.  **Use Gaussian smooth label regression as base margin (LB: 0.00252):**  The provided code snippets *don't* explicitly show Gaussian smoothing.  However, based on the description, it indicates using the output from the earlier, non-normalized models to be used in a label regression step.
+6.  **Use Gaussian smooth label regression as base margin (LB: 0.00252):** 
 
-7.  **Train image model to classify flood vs non-flood locations and normalize probability (LB: 0.00245):**  This step utilizes an image model (details not in the provided code).  The `normalize` function (`cv.py`, lines 11-19) is key here:
+This step employs a Gaussian smoothing technique to transform the binary flood labels (0 or 1) into a continuous, "soft" target variable.  This smoothed representation is then used as the target variable for an XGBoost regression model. This approach is beneficial because it provides a more nuanced representation of flood risk and helps the model learn a smoother decision boundary. The predictions of this regression model is then used as the base margin for the final classification model
+
+
+7.  **Train image model to classify flood vs non-flood locations and normalize probability (LB: 0.00245):**  
+A YOLO image classification model (`train_cls.py`) is trained to distinguish flood-prone locations.  Training uses 128x128 images, data augmentation, and 10 epochs.  The model's output probabilities `flood_a1` are for each location, which is used to select flood locations and normalize the probabilities.
+The `normalize` function (`cv.py`, lines 11-19) is key here:
     *   `df['ls'] = df.groupby('location')[col].transform('sum')`: Calculates the sum of the target variable (`col`, the flood probability) for each location.
-    *   `df['lx'] = df.groupby('location')[col].transform('max')`: Calculates the maximum of the target variable for each location.
     *    A mask is applied using `flood_a1`.
     *   `df.loc[mask,col] = df.loc[mask,col]/df.loc[mask,'ls']`:  This normalizes the target variable by dividing by the sum of the target *for each location*, but only where `flood_a1` is greater than `confidence`.  This adjusts the probabilities based on the image model's classification, scaling them within each location.
 
