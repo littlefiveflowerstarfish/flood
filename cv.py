@@ -66,12 +66,8 @@ def prepare_data(tag='val'):
     df.loc[mask,'precipitation'] = 0
 
     df['location'] = df['event_id'].apply(lambda x: '_'.join(x.split('_')[:2]))
-    # tmp = df.groupby('location')['label'].max().reset_index()
-    # mask = tmp.location.isin(df[df.flood_leak>0]['location'].unique())
-    # assert tmp[mask]['label'].min()==1
-    # assert tmp[~mask]['label'].max()==0
 
-    models = ['a1','b1']
+    models = ['a1']
 
     for model in models:
         pdf = pd.read_csv(f'blend/{tag}_{model}_avg.csv')
@@ -86,8 +82,8 @@ def prepare_data(tag='val'):
 
     df['rsum'] = df.groupby('location')['precipitation'].transform('mean')
     df['rmax'] = df.groupby('location')['precipitation'].transform('max')
-    rcols = []
-    
+
+    df, rcols = fe(df, 'precipitation')
     feas += rcols
     return df, feas
 
