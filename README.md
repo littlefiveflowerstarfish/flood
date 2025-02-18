@@ -12,7 +12,14 @@ This project aims to predict flood occurrences in South Africa.  The approach in
 | 6    | Use Gaussian smooth label regression as base margin                                                  | 0.00252   |
 | 7    | Train image model (YOLO) to classify flood vs non-flood locations and normalize probability                         | 0.00245   |
 
+**Reproduce the best solution:**
 
+```python
+# edit PATH in const.py
+python create_cv.py
+python rv.py
+python cv.py
+```
 
 **Progression and Results:**
 
