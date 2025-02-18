@@ -24,7 +24,7 @@ def prepare_data(tag='val'):
 
     feas = ['precipitation', 'order', 'days_since_rain']
 
-    models = ['a1_b1_a1_rain_a2_rain']
+    models = ['x1']
     #df['m'] = 0
     for model in models:
         pdf = pd.read_csv(f'blend/{tag}_{model}_avg.csv')
@@ -42,15 +42,15 @@ def prepare_data(tag='val'):
         rcols.append(f'rm_{w}')
 
 
-    # for lag in [2,8,14,28]:
-    #     for w in list(range(2, 150, 2)):
-    #         df[f'lag_rm_{w}_{lag}'] = df.groupby('location')[f'rainfall_lag_{lag}'].transform(lambda x: x.rolling(w, center=True).mean())
-    #         rcols.append(f'lag_rm_{w}_{lag}')
+    for lag in [2,8,14,28]:
+        for w in list(range(2, 150, 2)):
+            df[f'lag_rm_{w}_{lag}'] = df.groupby('location')[f'rainfall_lag_{lag}'].transform(lambda x: x.rolling(w, center=True).mean())
+            rcols.append(f'lag_rm_{w}_{lag}')
     
-    # for lag in [2,8,14,28]:
-    #     for w in list(range(150,250,10)):
-    #         df[f'lag_rm_{w}_{lag}'] = df.groupby('location')[f'rainfall_lag_{lag}'].transform(lambda x: x.rolling(w, center=True).mean())
-    #         rcols.append(f'lag_rm_{w}_{lag}')
+    for lag in [2,8,14,28]:
+        for w in list(range(150,250,10)):
+            df[f'lag_rm_{w}_{lag}'] = df.groupby('location')[f'rainfall_lag_{lag}'].transform(lambda x: x.rolling(w, center=True).mean())
+            rcols.append(f'lag_rm_{w}_{lag}')
 
     feas += rcols
     return df, feas#+['m']
@@ -58,7 +58,7 @@ def prepare_data(tag='val'):
 def cv(tag, sigma):
     df, feas = prepare_data()
     test, _ = prepare_data('test')
-    #print(feas)
+    print(feas)
     folds = 4
     df['flood'] = 0
     test['flood'] = 0
@@ -83,7 +83,7 @@ def cv(tag, sigma):
                                                   'min_child_weight':1,
                                                   'gamma':0.1,
                                                   'colsample_bytree':0.5}, 
-                        num_boost_rounds=2000,
+                        num_boost_rounds=1000,
                         early_stop_rounds=100)
         e = 1e-5
         xgb.fit(tr[feas], tr['gaussian'], val[feas], val['gaussian'])
@@ -108,6 +108,6 @@ def cv(tag, sigma):
 
 
 if __name__ == '__main__':
-    tag = 'x4'
-    for sigma in [15]:
-        cv(tag, sigma)
+    tag = 'x1'
+    sigma = 15
+    cv(tag, sigma)
