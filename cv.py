@@ -47,9 +47,9 @@ def fe(df, col):
 
 def prepare_data(tag='val'):
     if tag == 'val':
-        df = pd.read_csv(f'../notebooks/train_leak.csv')
+        df = pd.read_csv(f'{PATH}/Train.csv')
     else:
-        df = pd.read_csv(f'../notebooks/test_leak.csv')
+        df = pd.read_csv(f'{PATH}/Test.csv')
     feas = ['precipitation', 'order']
 
     for r in [15]:
