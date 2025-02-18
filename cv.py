@@ -9,7 +9,7 @@ import numpy as np
 from utils import gaussian_density
 from functools import partial
 
-def normalize(df, col, confidence=0.05):
+def fix(df, col, confidence=0.05):
     if confidence is None:
         return df[col].values
     df['ls'] = df.groupby('location')[col].transform('sum')
@@ -50,8 +50,7 @@ def prepare_data(tag='val'):
         df = pd.read_csv(f'{PATH}/Train.csv')
     else:
         df = pd.read_csv(f'{PATH}/Test.csv')
-    feas = ['precipitation', 'order']
-
+    feas = ['precipitation', 'order', 'days_since_rain']
     for r in [15]:
         dx = pd.read_csv(f'blend/r_{tag}_x1_{r}.csv')
         if tag == 'val':
@@ -66,7 +65,6 @@ def prepare_data(tag='val'):
     df.loc[mask,'precipitation'] = 0
 
     df['location'] = df['event_id'].apply(lambda x: '_'.join(x.split('_')[:2]))
-
     models = ['a1']
 
     for model in models:
@@ -75,6 +73,7 @@ def prepare_data(tag='val'):
         df = df.rename(columns={'flood': f'flood_{model}'})
         feas.append(f'flood_{model}')
 
+    df['days_since_rain'] = df.groupby('location')['precipitation'].transform(lambda x: (x == 0).cumsum() - (x == 0).cumsum().where(x != 0).ffill().fillna(0))
 
     for sigma in [50]:
         df[f'gaussian_{sigma}'] = df.groupby('location')['order'].transform(partial(gaussian_density, sigma=sigma))
@@ -82,15 +81,17 @@ def prepare_data(tag='val'):
 
     df['rsum'] = df.groupby('location')['precipitation'].transform('mean')
     df['rmax'] = df.groupby('location')['precipitation'].transform('max')
-
-    df, rcols = fe(df, 'precipitation')
+    rcols = []
+    
+    
+    df,rcols = fe(df, 'precipitation')
+    
     feas += rcols
     return df, feas
 
 def cv(tag):
     df, feas = prepare_data()
     test, _ = prepare_data('test')
-    feas = list(set(feas))
     mcol = 'flood_15'
     train_margin = df[[mcol]]
     train_margin[mcol] = train_margin[mcol].values
@@ -117,22 +118,20 @@ def cv(tag):
         xgb = XGBHelper('classification', params={'max_depth': 3, 'eta':0.02,
                                                   'subsample': 0.8,
                                                   'min_child_weight':1,
-                                                  'scale_pos_weight': 2,
                                                   'gamma':0.1,
                                                   'colsample_bytree':0.5}, 
                         num_boost_rounds=5000,
                         early_stop_rounds=100)
         tr_margin = train_margin.loc[~mask, mcol].values
         val_margin = train_margin.loc[mask, mcol].values
-        tr_margin,val_margin,test_margin = None,None,None
 
         xgb.fit(tr[feas], tr['label'], val[feas], val['label'], tr_margin, val_margin)
         importance = xgb.get_feature_importance()
         print(importance.head())
         val['flood'] = xgb.predict(val[feas], val_margin)
-        df.loc[mask,'flood'] = normalize(val[['location','flood','flood_a1']], 'flood', conf)
+        df.loc[mask,'flood'] = fix(val[['location','flood','flood_a1']], 'flood', conf)
         test['pred'] = xgb.predict(test[feas], test_margin)
-        test['flood'] += normalize(test[['location','pred','flood_a1']], 'pred', conf)
+        test['flood'] += fix(test[['location','pred','flood_a1']], 'pred', conf)
         score = log_loss(df.loc[mask,'label'], df.loc[mask,'flood'])
         scores.append(score)
         print('fold', i, score)
