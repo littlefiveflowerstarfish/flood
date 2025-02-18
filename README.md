@@ -17,7 +17,12 @@ This project aims to predict flood occurrences in South Africa.  The approach in
 ```python
 # edit PATH in const.py
 python create_cv.py
+# train and predict image models
+./train_cls.sh
+./infer_cls.sh
+# train gaussian smooth label regression model
 python rv.py
+# train final classification model
 python cv.py
 ```
 
