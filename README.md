@@ -5,7 +5,7 @@ This project aims to predict flood occurrences in South Africa.  The approach in
 | Step | Description                                                                                                         | LB Score  |
 |------|---------------------------------------------------------------------------------------------------------------------|-----------|
 | 1    | Rule-based baseline (based on flood days and locations only)                                                            | 0.00481  |
-| 2    | Simple XGBoost baseline (using initial features without feature engineering)                                           | 0.00421  |
+| 2    | Simple XGBoost baseline (using initial features without feature engineering)                                           | 0.00439  |
 | 3    | Add precipitation rolling mean feature (various window sizes from 2 to 240)                                           | 0.00318   |
 | 4    | Rolling mean with `center=True` (considers both past and future values)                                              | 0.00296   |
 | 5    | Add difference and rolling mean of difference (lags of 2, 8, 14, 28 days; various window sizes)                      | 0.00271   |
@@ -36,7 +36,7 @@ python cv.py
 
 1.  **Rule-based baseline (LB: 0.004810):**  An initial baseline based on flood days and locations only.
 
-2.  **Simple XGBoost baseline (LB: 0.004218):**  A basic XGBoost model is trained, using the initial features in the dataset without feature engineering.
+2.  **Simple XGBoost baseline (LB: 0.00439):**  A basic XGBoost model is trained, using the initial features in the dataset without feature engineering.
 
 3.  **Add precipitation rolling mean feature (LB: 0.00318):** This significant improvement comes from adding rolling mean features of precipitation.  The `fe` function (`cv.py`, lines 21-45) calculates rolling means for various window sizes (`w`):
     *   `for w in list(range(2,100,2)) + list(range(100, 250, 10)):`  This creates rolling mean features with windows from 2 to 98 (step 2) and 100 to 240 (step 10).  These are stored as columns named `rm_{w}_precipitation`.
