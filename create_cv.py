@@ -72,40 +72,10 @@ def create_cv(img_folder='b3_images', output='b3_cv'):
             os.system(f'ln -s {PATH}/{img_folder}/{i}.png {PATH}/{output}/fold_{fold}/val/flood/{i}.png')
         for i in val[~mask].location.values:
             os.system(f'ln -s {PATH}/{img_folder}/{i}.png {PATH}/{output}/fold_{fold}/val/no_flood/{i}.png')
-
-def add_rain(img_path, folds=4):
-    def get_rain(df, imgs):
-        locs = []
-        for img in imgs:
-            img_name = img.split('/')[-1]
-            img_name = img_name.split('.')[0]
-            locs.append(img_name)
-        dg = pd.DataFrame(locs, columns=['location'])
-        dg['loc_id'] = np.arange(len(dg))
-        mask = df.location.isin(dg.location.values)
-        df = df[mask].reset_index(drop=True)
-        df['id'] = np.arange(len(df))
-        df = pd.merge(df, dg, on='location', how='left')
-        df = df.sort_values(by=['loc_id','id'])
-        return df.precipitation.values.reshape([dg.shape[0], 730])
-    
-    df = prepare_df('Train')
-    for i in tqdm(range(folds)):
-        train_imgs = sorted(glob(f'{img_path}/fold_{i}/train/*/*.png'))
-        val_imgs = sorted(glob(f'{img_path}/fold_{i}/val/*/*.png'))
-        train_rain = get_rain(df, train_imgs)
-        val_rain = get_rain(df, val_imgs)
-        np.save(f'{img_path}/fold_{i}/train_rain.npy', train_rain)
-        np.save(f'{img_path}/fold_{i}/val_rain.npy', val_rain)
     
    
 
 if __name__ == '__main__':
-    # create_b3_images('Train')
-    # create_b3_images('Test')
-    # create_cv()
-    # create_b6_images('Train')
-    # create_b6_images('Test')
-    #create_cv('b6_images', 'b6_cv')
-
-    add_rain(f'{PATH}/b3_cv', 4)
+    create_b3_images('Train')
+    create_b3_images('Test')
+    create_cv()
