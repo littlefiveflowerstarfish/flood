@@ -2,6 +2,18 @@
 
 This project aims to predict flood occurrences in South Africa.  The approach involves iterative improvements using feature engineering and modeling techniques.
 
+| Step | Description                                                                                                         | LB Score  |
+|------|---------------------------------------------------------------------------------------------------------------------|-----------|
+| 1    | Rule-based baseline (based on flood days and locations only)                                                            | 0.00481  |
+| 2    | Simple XGBoost baseline (using initial features without feature engineering)                                           | 0.00421  |
+| 3    | Add precipitation rolling mean feature (various window sizes from 2 to 240)                                           | 0.00318   |
+| 4    | Rolling mean with `center=True` (considers both past and future values)                                              | 0.00296   |
+| 5    | Add difference and rolling mean of difference (lags of 2, 8, 14, 28 days; various window sizes)                      | 0.00271   |
+| 6    | Use Gaussian smooth label regression as base margin                                                  | 0.00252   |
+| 7    | Train image model (YOLO) to classify flood vs non-flood locations and normalize probability                         | 0.00245   |
+
+
+
 **Progression and Results:**
 
 1.  **Rule-based baseline (LB: 0.004810):**  An initial baseline based on flood days and locations only.
@@ -23,10 +35,6 @@ This project aims to predict flood occurrences in South Africa.  The approach in
 
 7.  **Train image model to classify flood vs non-flood locations and normalize probability (LB: 0.00245):**  
 A YOLO image classification model (`train_cls.py`) is trained to distinguish flood-prone locations.  Training uses 128x128 images, data augmentation, and 10 epochs.  The model's output probabilities `flood_a1` are for each location, which is used to select flood locations and normalize the probabilities.
-The `normalize` function (`cv.py`, lines 11-19) is key here:
-    *   `df['ls'] = df.groupby('location')[col].transform('sum')`: Calculates the sum of the target variable (`col`, the flood probability) for each location.
-    *    A mask is applied using `flood_a1`.
-    *   `df.loc[mask,col] = df.loc[mask,col]/df.loc[mask,'ls']`:  This normalizes the target variable by dividing by the sum of the target *for each location*, but only where `flood_a1` is greater than `confidence`.  This adjusts the probabilities based on the image model's classification, scaling them within each location.
 
 
 **Overall Approach:**
@@ -35,13 +43,11 @@ The solution uses a multi-stage approach:
 
 1.  **Feature Engineering:**  Extensive feature engineering is performed, focusing on:
     *   Rolling means of precipitation and lagged precipitation differences.
-    *   Days since the last rain.
-    *   Soil moisture estimation.
-    *   Time to peak value.
 
 2.  **Modeling:**
     *   An initial rule-based baseline.
     *   XGBoost models are trained with increasingly complex features.
-    *   An image model (details not provided) is used for location-based classification.
+    *   Use Gaussian smooth label regression as base margin to improve model performance.
+    *   An image model is used for location-based classification.
 
 3.  **Normalization:**  The `normalize` function adjusts predictions, using the image model output to scale probabilities within each location.
